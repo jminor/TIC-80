@@ -81,6 +81,10 @@ typedef enum
     SquirrelScript,
 #endif
 
+#if defined(TIC_BUILD_WITH_PYTHON)
+    PythonScript,
+#endif
+
 } ScriptLang;
 
 #if defined(__TIC_WINDOWS__) || defined(__TIC_LINUX__) || defined(__TIC_MACOSX__)
@@ -136,7 +140,11 @@ static const char DefaultWrenTicPath[] = TIC_LOCAL_VERSION "default_wren.tic";
 
 #if defined(TIC_BUILD_WITH_SQUIRREL)
 static const char DefaultSquirrelTicPath[] = TIC_LOCAL_VERSION "default_squirrel.tic";
-#endif  
+#endif
+
+#if defined(TIC_BUILD_WITH_PYTHON)
+static const char DefaultPythonTicPath[] = TIC_LOCAL_VERSION "default_python.tic";
+#endif
 
 static const char* getName(const char* name, const char* ext)
 {
@@ -505,6 +513,10 @@ static void* getDemoCart(Console* console, ScriptLang script, s32* size)
 #if defined(TIC_BUILD_WITH_SQUIRREL)
         case SquirrelScript: strcpy(path, DefaultSquirrelTicPath); break;
 #endif          
+
+#if defined(TIC_BUILD_WITH_PYTHON)
+        case PythonScript: strcpy(path, DefaultPythonTicPath); break;
+#endif          
         }
 
         void* data = fsLoadRootFile(console->fs, path, size);
@@ -603,6 +615,20 @@ static void* getDemoCart(Console* console, ScriptLang script, s32* size)
         }
         break;
 #endif /* defined(TIC_BUILD_WITH_SQUIRREL) */
+
+#if defined(TIC_BUILD_WITH_PYTHON)
+    case PythonScript:
+        {
+            static const u8 PythonDemoRom[] =
+            {
+                #include "../build/assets/pythondemo.tic.dat"
+            };
+
+            demo = PythonDemoRom;
+            romSize = sizeof PythonDemoRom;
+        }
+        break;
+#endif /* defined(TIC_BUILD_WITH_PYTHON) */
     }
 
     u8* data = calloc(1, sizeof(tic_cartridge));
@@ -660,6 +686,11 @@ static void onConsoleLoadDemoCommandConfirmed(Console* console, const char* para
 #if defined(TIC_BUILD_WITH_SQUIRREL)
     if(strcmp(param, DefaultSquirrelTicPath) == 0)
         data = getDemoCart(console, SquirrelScript, &size);
+#endif
+
+#if defined(TIC_BUILD_WITH_PYTHON)
+    if(strcmp(param, DefaultPythonTicPath) == 0)
+        data = getDemoCart(console, PythonScript, &size);
 #endif
 
     const char* name = getCartName(param);
@@ -763,6 +794,9 @@ static void onConsoleLoadCommandConfirmed(Console* console, const char* param)
 
             if(!fsExistsFile(console->fs, name))
                 name = getName(param, PROJECT_SQUIRREL_EXT);
+
+            if(!fsExistsFile(console->fs, name))
+                name = getName(param, PROJECT_PYTHON_EXT);
 
             void* data = fsLoadFile(console->fs, name, &size);
 
@@ -957,6 +991,14 @@ static void onConsoleNewCommandConfirmed(Console* console, const char* param)
         if(strcmp(param, "squirrel") == 0)
         {
             loadDemo(console, SquirrelScript);
+            done = true;
+        }
+#endif          
+
+#if defined(TIC_BUILD_WITH_PYTHON)
+        if(strcmp(param, "python") == 0)
+        {
+            loadDemo(console, PythonScript);
             done = true;
         }
 #endif          
@@ -1295,6 +1337,13 @@ static void onConsoleConfigCommand(Console* console, const char* param)
     }
 #endif
     
+#if defined(TIC_BUILD_WITH_PYTHON)
+    else if(strcmp(param, "default python") == 0)
+    {
+        onConsoleLoadDemoCommand(console, DefaultPythonTicPath);
+    }
+#endif
+
     else
     {
         printError(console, "\nunknown parameter: ");
@@ -2830,6 +2879,8 @@ static void tick(Console* console)
             loadDemo(console, WrenScript);
 #elif defined(TIC_BUILD_WITH_SQUIRREL)
             loadDemo(console, SquirrelScript);
+#elif defined(TIC_BUILD_WITH_PYTHON)
+            loadDemo(console, PythonScript);
 #endif          
 
             printBack(console, "\n hello! type ");

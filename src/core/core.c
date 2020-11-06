@@ -345,6 +345,11 @@ const tic_script_config* tic_core_script_config(tic_mem* memory)
         return getSquirrelScriptConfig();
 #endif
 
+#if defined(TIC_BUILD_WITH_PYTHON)
+    if (compareMetatag(code, "script", "python", getPythonScriptConfig()->singleComment))
+        return getPythonScriptConfig();
+#endif
+
 #if defined(TIC_BUILD_WITH_LUA)
     return getLuaScriptConfig();
 #elif defined(TIC_BUILD_WITH_JS)
@@ -353,6 +358,8 @@ const tic_script_config* tic_core_script_config(tic_mem* memory)
     return getWrenScriptConfig();
 #elif defined(TIC_BUILD_WITH_SQUIRREL)
     return getSquirrelScriptConfig();
+#elif defined(TIC_BUILD_WITH_PYTHON)
+    return getPythonScriptConfig();
 #endif
 }
 
@@ -563,6 +570,10 @@ void tic_core_close(tic_mem* memory)
     tic_core* core = (tic_core*)memory;
 
     core->state.initialized = false;
+
+#if defined(TIC_BUILD_WITH_PYTHON)
+    getPythonScriptConfig()->close(memory);
+#endif
 
 #if defined(TIC_BUILD_WITH_SQUIRREL)
     getSquirrelScriptConfig()->close(memory);
